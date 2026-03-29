@@ -1,0 +1,2 @@
+pipeline,accuracy,sensitivity,specificity,F1_score,AUC,TP,TN,FP,FN
+Clinical → StandardScaler + LDA,0.7875,0.5517,0.9216,0.6531,0.7532,16,47,4,13

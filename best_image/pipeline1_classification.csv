@@ -1,0 +1,2 @@
+pipeline,accuracy,sensitivity,specificity,F1_score,TP,TN,FP,FN
+ResNet50 → ANOVA200→PCA5 + LDA,0.7625,0.5862,0.8627,0.6415,17,44,7,12
