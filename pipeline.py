@@ -5,7 +5,7 @@ Feature extraction (with pickle caching), 5-fold stratified CV evaluation,
 and metrics for binary classification of cropped ultrasound images using
 RadImageNet CNN features.
 
-Pipeline: CNN avgpool → variance filter → StandardScaler → PCA → classifier → 5-Fold CV
+Pipeline: CNN avgpool → variance filter → StandardScaler → ANOVA → PCA → classifier → 5-Fold CV
 """
 
 import os
@@ -29,6 +29,7 @@ from sklearn.metrics import (
 from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
 
 warnings.filterwarnings("ignore")
@@ -184,16 +185,13 @@ def load_or_extract(model_name="ResNet50"):
 # ──────────────────────────────────────────────────────────────
 # Classification pipeline + 5-Fold CV
 # ──────────────────────────────────────────────────────────────
-def build_pipeline(n_pca=20, classifier=None, fs_mode="pca", anova_k=None):
+def build_pipeline(n_pca=5, classifier=None, fs_mode="anova_pca", anova_k=200):
     """Build a sklearn Pipeline with scaler, feature selection, and classifier.
 
     fs_mode: "pca" | "anova" | "anova_pca"
     """
     if classifier is None:
-        classifier = SVC(
-            kernel="rbf", C=0.1, gamma="scale",
-            class_weight="balanced", random_state=RANDOM_STATE,
-        )
+        classifier = LinearDiscriminantAnalysis()
     steps = [("scaler", StandardScaler())]
     if fs_mode in ("anova", "anova_pca"):
         steps.append(("anova", SelectKBest(f_classif, k=anova_k)))
@@ -203,7 +201,7 @@ def build_pipeline(n_pca=20, classifier=None, fs_mode="pca", anova_k=None):
     return Pipeline(steps)
 
 
-def run_cv(X, y, n_pca=20, classifier=None, fs_mode="pca", anova_k=None):
+def run_cv(X, y, n_pca=5, classifier=None, fs_mode="anova_pca", anova_k=200):
     """Run 5-fold stratified CV with variance filter inside the loop.
 
     Returns y_pred, decision_vals, proba (proba is None if classifier lacks predict_proba).
@@ -308,7 +306,7 @@ def predict_with_fold_pipeline(X_test, artifacts):
 # ──────────────────────────────────────────────────────────────
 # Main entry point
 # ──────────────────────────────────────────────────────────────
-def main(model_name="ResNet50", classifier=None, n_pca=20, fs_mode="pca", anova_k=None):
+def main(model_name="ResNet50", classifier=None, n_pca=5, fs_mode="anova_pca", anova_k=200):
     """Run the full pipeline and return a results dict.
 
     No file I/O except the feature pickle cache.

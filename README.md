@@ -6,7 +6,7 @@ Supplementary code and data.
 
 Binary classification of cropped transvaginal ultrasound images for preterm birth prediction. The pipeline extracts deep texture features from RadImageNet-pretrained backbones (ResNet50, DenseNet121, InceptionV3), reduces dimensionality with PCA, and classifies using a configurable classifier (default: SVM).
 
-**Default pipeline:** ResNet50 avgpool (2048-d) &rarr; variance filter &rarr; StandardScaler &rarr; PCA(20) &rarr; SVM(RBF, C=0.1, balanced) &rarr; 5-Fold CV
+**Default pipeline:** ResNet50 avgpool (2048-d) &rarr; variance filter &rarr; StandardScaler &rarr; ANOVA(200) &rarr; PCA(5) &rarr; LDA &rarr; 5-Fold CV
 
 ## Dataset
 
