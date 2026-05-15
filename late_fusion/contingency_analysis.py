@@ -15,6 +15,7 @@ Usage:
     conda run -n torch python contingency_analysis.py
 """
 
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -30,6 +31,9 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
 )
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from pipeline import compute_fold_metrics
 
 RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
@@ -100,12 +104,18 @@ def load_combo_data(combo):
     df_img = pd.read_csv(combo["image_csv"])
     df_clin = pd.read_csv(combo["clinical_csv"])
 
-    df = df_img[["filename", "true_label", "proba_preterm"]].rename(
-        columns={"proba_preterm": "p_preterm_image"}
+    img_cols = ["filename", "true_label", "proba_preterm"]
+    if "fold" in df_img.columns:
+        img_cols.append("fold")
+    df = df_img[img_cols].rename(
+        columns={"proba_preterm": "p_preterm_image", "fold": "fold_image"}
     )
+    clin_cols = ["filename", "proba_preterm"]
+    if "fold" in df_clin.columns:
+        clin_cols.append("fold")
     df = df.merge(
-        df_clin[["filename", "proba_preterm"]].rename(
-            columns={"proba_preterm": "p_preterm_clinical"}
+        df_clin[clin_cols].rename(
+            columns={"proba_preterm": "p_preterm_clinical", "fold": "fold_clinical"}
         ),
         on="filename",
     )
@@ -266,6 +276,23 @@ def majority_and_soft_vote(p_image, p_clinical, pred_image, pred_clinical):
 # ──────────────────────────────────────────────────────────────
 # Run all combining methods for one combo
 # ──────────────────────────────────────────────────────────────
+def _compute_combining_ci(df, y_pred_all, proba_all):
+    """Compute per-fold 95% CI for a combining method using fold assignments."""
+    if "fold_image" not in df.columns:
+        return {m: (np.nan, np.nan, np.nan)
+                for m in ["accuracy", "sensitivity", "specificity", "f1", "auc"]}
+    folds = df["fold_image"].values
+    unique_folds = sorted(set(folds))
+    fold_indices = []
+    for f in unique_folds:
+        test_idx = np.where(folds == f)[0]
+        train_idx = np.where(folds != f)[0]
+        fold_indices.append((train_idx, test_idx))
+    y_true = df["true_label"].values
+    result = compute_fold_metrics(y_true, y_pred_all, proba_all, fold_indices)
+    return result["ci"]
+
+
 def run_combining(df, combo):
     y_true = df["true_label"].values
     pred_image = df["pred_image"].values
@@ -285,16 +312,26 @@ def run_combining(df, combo):
     auc_img = roc_auc_score(y_true, p_image)
     auc_clin = roc_auc_score(y_true, p_clinical)
 
+    # CI for baselines
+    p_img_2d = np.column_stack([1 - p_image, p_image])
+    p_clin_2d = np.column_stack([1 - p_clinical, p_clinical])
+    ci_img = _compute_combining_ci(df, pred_image, p_img_2d)
+    ci_clin = _compute_combining_ci(df, pred_clinical, p_clin_2d)
+
     # --- LLR ---
     y_pred_llr, llr_vals = llr_combine(p_image, p_clinical, y_true, n_pos, n_neg)
     m_llr = compute_metrics(y_true, y_pred_llr)
     llr_score = 1 / (1 + np.exp(-llr_vals))
     auc_llr = roc_auc_score(y_true, llr_score)
+    llr_proba_2d = np.column_stack([1 - llr_score, llr_score])
+    ci_llr = _compute_combining_ci(df, y_pred_llr, llr_proba_2d)
 
     # --- Product rule ---
     y_pred_prod, p_prod = product_rule(p_image, p_clinical, n_pos, n_neg)
     m_prod = compute_metrics(y_true, y_pred_prod)
     auc_prod = roc_auc_score(y_true, p_prod)
+    prod_proba_2d = np.column_stack([1 - p_prod, p_prod])
+    ci_prod = _compute_combining_ci(df, y_pred_prod, prod_proba_2d)
 
     # --- Majority / Soft vote ---
     y_pred_hard, y_pred_soft, p_soft = majority_and_soft_vote(
@@ -302,15 +339,35 @@ def run_combining(df, combo):
     m_hard = compute_metrics(y_true, y_pred_hard)
     m_soft = compute_metrics(y_true, y_pred_soft)
     auc_soft = roc_auc_score(y_true, p_soft)
+    ci_hard = _compute_combining_ci(df, y_pred_hard, None)
+    soft_proba_2d = np.column_stack([1 - p_soft, p_soft])
+    ci_soft = _compute_combining_ci(df, y_pred_soft, soft_proba_2d)
 
     # --- Summary rows ---
+    def _ci_cols(ci_dict, include_auc=True):
+        keys = ["accuracy", "sensitivity", "specificity", "f1"]
+        if include_auc:
+            keys.append("auc")
+        out = {}
+        for k in keys:
+            out[f"{k}_ci_low"] = ci_dict[k][1]
+            out[f"{k}_ci_high"] = ci_dict[k][2]
+        return out
+
     summary_rows = [
-        {"method": "Image only", **{k: m_img[k] for k in METRICS}, "auc": auc_img},
-        {"method": "Clinical only", **{k: m_clin[k] for k in METRICS}, "auc": auc_clin},
-        {"method": "LLR", **{k: m_llr[k] for k in METRICS}, "auc": auc_llr},
-        {"method": "Product rule", **{k: m_prod[k] for k in METRICS}, "auc": auc_prod},
-        {"method": "Majority vote", **{k: m_hard[k] for k in METRICS}, "auc": np.nan},
-        {"method": "Soft vote", **{k: m_soft[k] for k in METRICS}, "auc": auc_soft},
+        {"method": "Image only", **{k: m_img[k] for k in METRICS}, "auc": auc_img,
+         **_ci_cols(ci_img)},
+        {"method": "Clinical only", **{k: m_clin[k] for k in METRICS}, "auc": auc_clin,
+         **_ci_cols(ci_clin)},
+        {"method": "LLR", **{k: m_llr[k] for k in METRICS}, "auc": auc_llr,
+         **_ci_cols(ci_llr)},
+        {"method": "Product rule", **{k: m_prod[k] for k in METRICS}, "auc": auc_prod,
+         **_ci_cols(ci_prod)},
+        {"method": "Majority vote", **{k: m_hard[k] for k in METRICS}, "auc": np.nan,
+         **_ci_cols(ci_hard, include_auc=False),
+         "auc_ci_low": np.nan, "auc_ci_high": np.nan},
+        {"method": "Soft vote", **{k: m_soft[k] for k in METRICS}, "auc": auc_soft,
+         **_ci_cols(ci_soft)},
     ]
 
     # --- Per-sample combined predictions ---

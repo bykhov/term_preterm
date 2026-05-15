@@ -1,2 +1,2 @@
-pipeline,accuracy,sensitivity,specificity,F1_score,TP,TN,FP,FN
-DenseNet121 → ANOVA100→PCA5 + SGD(modified_huber),0.6875,0.8276,0.6078,0.6575,24,31,20,5
+pipeline,accuracy,sensitivity,specificity,F1_score,TP,TN,FP,FN,accuracy_ci_low,accuracy_ci_high,sensitivity_ci_low,sensitivity_ci_high,specificity_ci_low,specificity_ci_high,F1_score_ci_low,F1_score_ci_high,AUC_ci_low,AUC_ci_high
+DenseNet121 → ANOVA100→PCA5 + SGD(modified_huber),0.6875,0.8621,0.5882,0.6667,25,30,21,4,0.5648,0.8102,0.6023,1.0000,0.3112,0.8597,0.5483,0.7759,0.6202,0.8186

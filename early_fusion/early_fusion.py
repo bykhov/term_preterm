@@ -41,7 +41,7 @@ _PARENT = str(Path(__file__).resolve().parent.parent)
 sys.path.insert(0, _PARENT)
 sys.path.insert(0, str(Path(_PARENT) / "sweep_clinical"))
 
-from pipeline import RANDOM_STATE, load_or_extract
+from pipeline import RANDOM_STATE, compute_fold_metrics, load_or_extract
 from clinical_sweep import FEATURE_COLS, compute_metrics, load_clinical_data
 
 warnings.filterwarnings("ignore")
@@ -128,8 +128,10 @@ def run_early_fusion_cv(X_cnn, X_clin, y, classifier, fs_mode, anova_k, n_pca):
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=RANDOM_STATE)
     y_pred = np.zeros(len(y), dtype=int)
     proba = np.full((len(y), 2), np.nan)
+    fold_indices = []
 
     for train_idx, test_idx in skf.split(X_cnn, y):
+        fold_indices.append((train_idx, test_idx))
         # Variance filter on CNN features (fit on train)
         variances = np.var(X_cnn[train_idx], axis=0)
         keep = variances > 1e-10
@@ -164,7 +166,7 @@ def run_early_fusion_cv(X_cnn, X_clin, y, classifier, fs_mode, anova_k, n_pca):
         if hasattr(pipe, "predict_proba"):
             proba[test_idx] = pipe.predict_proba(X_test)
 
-    return y_pred, proba
+    return y_pred, proba, fold_indices
 
 
 # ──────────────────────────────────────────────────────────────
@@ -331,10 +333,12 @@ if __name__ == "__main__":
                   end="", flush=True)
 
             try:
-                y_pred, proba = run_early_fusion_cv(
+                y_pred, proba, fold_indices = run_early_fusion_cv(
                     X_cnn, X_clin_a, y, clf, fs_mode, anova_k, n_pca)
                 m = compute_metrics(y, y_pred)
                 auc = compute_auc(y, proba)
+                fold_result = compute_fold_metrics(y, y_pred, proba, fold_indices)
+                ci = fold_result["ci"]
             except Exception as e:
                 print(f"FAILED: {e}")
                 continue
@@ -352,6 +356,11 @@ if __name__ == "__main__":
                 "TN": int(m["cm"][0, 0]),
                 "FP": int(m["cm"][0, 1]),
                 "FN": int(m["cm"][1, 0]),
+                "accuracy_ci_low": ci["accuracy"][1], "accuracy_ci_high": ci["accuracy"][2],
+                "sensitivity_ci_low": ci["sensitivity"][1], "sensitivity_ci_high": ci["sensitivity"][2],
+                "specificity_ci_low": ci["specificity"][1], "specificity_ci_high": ci["specificity"][2],
+                "f1_ci_low": ci["f1"][1], "f1_ci_high": ci["f1"][2],
+                "auc_ci_low": ci["auc"][1], "auc_ci_high": ci["auc"][2],
             }
             auc_str = f"auc={auc:.3f}" if not np.isnan(auc) else "auc=N/A"
             print(f"acc={m['accuracy']:.3f}  sens={m['sensitivity']:.3f}  "

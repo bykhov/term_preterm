@@ -12,17 +12,17 @@ Pre-pregnancy diseases, Pregnancy diseases, Treatment to stop labor
 
 ## 5-Fold CV Results
 
-| Metric | Value |
-|--------|-------|
-| Accuracy | 0.787 |
-| Sensitivity | 0.552 |
-| Specificity | 0.922 |
-| F1 | 0.653 |
-| AUC | 0.753 |
-| TP | 16 |
-| TN | 47 |
-| FP | 4 |
-| FN | 13 |
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Accuracy | 0.787 | (0.699–0.876) |
+| Sensitivity | 0.552 | (0.341–0.753) |
+| Specificity | 0.922 | (0.828–1.000) |
+| F1 | 0.653 | (0.445–0.835) |
+| AUC | 0.753 | (0.684–0.846) |
+| TP | 16 | |
+| TN | 47 | |
+| FP | 4 | |
+| FN | 13 | |
 
 ## Notes
 - LDA provides posterior class probabilities via `predict_proba`

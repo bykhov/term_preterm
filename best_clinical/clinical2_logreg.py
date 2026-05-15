@@ -8,6 +8,7 @@ Usage:
     conda run -n torch python clinical2_logreg.py
 """
 
+import sys
 from pathlib import Path
 
 import matplotlib
@@ -30,6 +31,9 @@ from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from pipeline import compute_fold_metrics
+
 RANDOM_STATE = 42
 np.random.seed(RANDOM_STATE)
 
@@ -40,7 +44,7 @@ plt.rcParams.update({
 })
 
 BASE_DIR = Path(__file__).resolve().parent
-DATA_CSV = BASE_DIR.parent / "Data" / "clinical_data.csv"
+DATA_CSV = BASE_DIR.parent.parent / "Data_meta" / "clinical_data.csv"
 PREFIX = "clinical2_logreg"
 LABEL = "Clinical → StandardScaler + LogReg(C=0.1)"
 
@@ -80,8 +84,10 @@ def run_cv(X, y):
     y_pred = np.zeros(len(y), dtype=int)
     decision_vals = np.full(len(y), np.nan)
     proba = np.full((len(y), 2), np.nan)
+    fold_indices = []
 
     for train_idx, test_idx in skf.split(X, y):
+        fold_indices.append((train_idx, test_idx))
         classifier = LogisticRegression(
             C=0.1, max_iter=5000, class_weight="balanced",
             random_state=RANDOM_STATE,
@@ -95,7 +101,7 @@ def run_cv(X, y):
         decision_vals[test_idx] = clf.decision_function(X_test_scaled)
         proba[test_idx] = clf.predict_proba(X_test_scaled)
 
-    return y_pred, decision_vals, proba
+    return y_pred, decision_vals, proba, fold_indices
 
 
 # ──────────────────────────────────────────────────────────────
@@ -218,8 +224,10 @@ if __name__ == "__main__":
     print(f"Clinical data: {X.shape[0]} samples, {X.shape[1]} features")
     print(f"  Term: {np.sum(y == 0)}, Preterm: {np.sum(y == 1)}")
 
-    y_pred, decision_vals, proba = run_cv(X, y)
+    y_pred, decision_vals, proba, fold_indices = run_cv(X, y)
     metrics = compute_metrics(y, y_pred)
+    fold_result = compute_fold_metrics(y, y_pred, proba, fold_indices)
+    ci = fold_result["ci"]
 
     print(f"\nResults:")
     print(f"  Accuracy:    {metrics['accuracy']:.3f}")
@@ -264,6 +272,11 @@ if __name__ == "__main__":
         "F1_score": metrics["f1"],
         "AUC": roc_auc,
         "TP": tp, "TN": tn, "FP": fp, "FN": fn,
+        "accuracy_ci_low": ci["accuracy"][1], "accuracy_ci_high": ci["accuracy"][2],
+        "sensitivity_ci_low": ci["sensitivity"][1], "sensitivity_ci_high": ci["sensitivity"][2],
+        "specificity_ci_low": ci["specificity"][1], "specificity_ci_high": ci["specificity"][2],
+        "F1_score_ci_low": ci["f1"][1], "F1_score_ci_high": ci["f1"][2],
+        "AUC_ci_low": ci["auc"][1], "AUC_ci_high": ci["auc"][2],
     }])
     table1.to_csv(BASE_DIR / f"{PREFIX}_classification.csv",
                    index=False, float_format="%.4f")
@@ -286,11 +299,15 @@ if __name__ == "__main__":
     print(f"  {PREFIX}_per_sample.csv")
 
     # --- Proba CSV for fusion ---
+    fold_assignments = np.full(len(y), -1, dtype=int)
+    for fold_num, (_, test_idx) in enumerate(fold_indices):
+        fold_assignments[test_idx] = fold_num
     proba_df = pd.DataFrame({
         "filename": filenames,
         "true_label": y,
         "proba_term": proba[:, 0],
         "proba_preterm": proba[:, 1],
+        "fold": fold_assignments,
     })
     proba_df.to_csv(BASE_DIR / f"{PREFIX}_proba.csv",
                      index=False, float_format="%.6f")
@@ -314,17 +331,17 @@ Pre-pregnancy diseases, Pregnancy diseases, Treatment to stop labor
 
 ## 5-Fold CV Results
 
-| Metric | Value |
-|--------|-------|
-| Accuracy | {metrics['accuracy']:.3f} |
-| Sensitivity | {metrics['sensitivity']:.3f} |
-| Specificity | {metrics['specificity']:.3f} |
-| F1 | {metrics['f1']:.3f} |
-| AUC | {roc_auc:.3f} |
-| TP | {tp} |
-| TN | {tn} |
-| FP | {fp} |
-| FN | {fn} |
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Accuracy | {metrics['accuracy']:.3f} | ({ci['accuracy'][1]:.3f}–{ci['accuracy'][2]:.3f}) |
+| Sensitivity | {metrics['sensitivity']:.3f} | ({ci['sensitivity'][1]:.3f}–{ci['sensitivity'][2]:.3f}) |
+| Specificity | {metrics['specificity']:.3f} | ({ci['specificity'][1]:.3f}–{ci['specificity'][2]:.3f}) |
+| F1 | {metrics['f1']:.3f} | ({ci['f1'][1]:.3f}–{ci['f1'][2]:.3f}) |
+| AUC | {roc_auc:.3f} | ({ci['auc'][1]:.3f}–{ci['auc'][2]:.3f}) |
+| TP | {tp} | |
+| TN | {tn} | |
+| FP | {fp} | |
+| FN | {fn} | |
 
 ## Notes
 - LogisticRegression provides calibrated posterior probabilities via `predict_proba`

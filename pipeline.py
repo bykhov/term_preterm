@@ -25,12 +25,14 @@ from sklearn.metrics import (
     accuracy_score,
     confusion_matrix,
     f1_score,
+    roc_auc_score,
 )
 from sklearn.model_selection import StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.svm import SVC
+from scipy import stats
 
 warnings.filterwarnings("ignore")
 
@@ -212,8 +214,10 @@ def run_cv(X, y, n_pca=5, classifier=None, fs_mode="anova_pca", anova_k=200):
     proba = np.full((len(y), 2), np.nan) if True else None  # placeholder
     has_proba = None
     kept_masks = []
+    fold_indices = []
 
     for train_idx, test_idx in skf.split(X, y):
+        fold_indices.append((train_idx, test_idx))
         variances = np.var(X[train_idx], axis=0)
         keep = variances > 1e-10
         kept_masks.append(keep)
@@ -249,7 +253,7 @@ def run_cv(X, y, n_pca=5, classifier=None, fs_mode="anova_pca", anova_k=200):
             changed = np.where(kept_masks[i] != kept_masks[0])[0]
             print(f"    Fold {i}: columns {changed.tolist()} differ from fold 0")
 
-    return y_pred, decision_vals, proba
+    return y_pred, decision_vals, proba, fold_indices
 
 
 def compute_metrics(y, y_pred):
@@ -265,6 +269,60 @@ def compute_metrics(y, y_pred):
         "accuracy": acc, "sensitivity": sens, "specificity": spec,
         "f1": f1, "cm": cm,
     }
+
+
+def compute_fold_metrics(y, y_pred, proba, fold_indices):
+    """Compute per-fold metrics and 95% confidence intervals.
+
+    For each metric, the CI is derived from the per-fold values using a
+    Student's t distribution with k-1 degrees of freedom:
+        half = t_{0.975, k-1} * s / sqrt(k),  s = sample std (ddof=1)
+        CI   = (mean - half, mean + half), clipped to [0, 1]
+
+    Returns dict with 'fold_metrics' (list of dicts) and 'ci' (dict mapping
+    metric name to (mean, low, high) tuple).
+    """
+    metric_names = ["accuracy", "sensitivity", "specificity", "f1", "auc"]
+    fold_values = {m: [] for m in metric_names}
+
+    for train_idx, test_idx in fold_indices:
+        y_te = y[test_idx]
+        yp_te = y_pred[test_idx]
+        cm = confusion_matrix(y_te, yp_te, labels=[0, 1])
+        tn, fp, fn, tp = cm.ravel()
+        fold_values["accuracy"].append(accuracy_score(y_te, yp_te))
+        fold_values["sensitivity"].append(tp / (tp + fn) if (tp + fn) > 0 else 0.0)
+        fold_values["specificity"].append(tn / (tn + fp) if (tn + fp) > 0 else 0.0)
+        fold_values["f1"].append(f1_score(y_te, yp_te, zero_division=0.0))
+        if proba is not None and not np.any(np.isnan(proba[test_idx])):
+            try:
+                fold_values["auc"].append(roc_auc_score(y_te, proba[test_idx, 1]))
+            except ValueError:
+                fold_values["auc"].append(np.nan)
+        else:
+            fold_values["auc"].append(np.nan)
+
+    ci = {}
+    for m in metric_names:
+        vals = np.array(fold_values[m], dtype=float)
+        valid = vals[~np.isnan(vals)]
+        if len(valid) >= 2:
+            mean = float(np.mean(valid))
+            s = float(np.std(valid, ddof=1))
+            half = float(stats.t.ppf(0.975, df=len(valid) - 1)) * s / np.sqrt(len(valid))
+            low = max(0.0, mean - half)
+            high = min(1.0, mean + half)
+            ci[m] = (mean, low, high)
+        elif len(valid) == 1:
+            ci[m] = (float(valid[0]), float(valid[0]), float(valid[0]))
+        else:
+            ci[m] = (np.nan, np.nan, np.nan)
+
+    fold_metrics = []
+    for i in range(len(fold_indices)):
+        fold_metrics.append({m: fold_values[m][i] for m in metric_names})
+
+    return {"fold_metrics": fold_metrics, "ci": ci}
 
 
 # ──────────────────────────────────────────────────────────────
@@ -317,8 +375,9 @@ def main(model_name="ResNet50", classifier=None, n_pca=5, fs_mode="anova_pca", a
     fs_label = {"pca": f"PCA({n_pca})", "anova": f"ANOVA({anova_k})",
                 "anova_pca": f"ANOVA({anova_k})->PCA({n_pca})"}[fs_mode]
     print(f"\nRunning 5-fold CV - {model_name} -> {fs_label} + {clf_name}...")
-    y_pred, decision_vals, proba = run_cv(X, y, n_pca, classifier, fs_mode, anova_k)
+    y_pred, decision_vals, proba, fold_indices = run_cv(X, y, n_pca, classifier, fs_mode, anova_k)
     metrics = compute_metrics(y, y_pred)
+    fold_result = compute_fold_metrics(y, y_pred, proba, fold_indices)
 
     print(f"  Accuracy:    {metrics['accuracy']:.3f}")
     print(f"  Sensitivity: {metrics['sensitivity']:.3f}")
@@ -339,4 +398,6 @@ def main(model_name="ResNet50", classifier=None, n_pca=5, fs_mode="anova_pca", a
         "y_pred": y_pred, "decision_vals": decision_vals,
         "proba": proba, "metrics": metrics, "model_name": model_name,
         "n_pca": n_pca, "classifier": classifier,
+        "fold_indices": fold_indices, "ci": fold_result["ci"],
+        "fold_metrics": fold_result["fold_metrics"],
     }

@@ -1,2 +1,2 @@
-pipeline,accuracy,sensitivity,specificity,F1_score,AUC,TP,TN,FP,FN
-Clinical → StandardScaler + LogReg(C=0.1),0.7500,0.6207,0.8235,0.6429,0.7620,18,42,9,11
+pipeline,accuracy,sensitivity,specificity,F1_score,AUC,TP,TN,FP,FN,accuracy_ci_low,accuracy_ci_high,sensitivity_ci_low,sensitivity_ci_high,specificity_ci_low,specificity_ci_high,F1_score_ci_low,F1_score_ci_high,AUC_ci_low,AUC_ci_high
+Clinical → StandardScaler + LogReg(C=0.1),0.7500,0.6207,0.8235,0.6429,0.7620,18,42,9,11,0.6550,0.8450,0.3508,0.8892,0.7697,0.8775,0.4379,0.8175,0.6448,0.8709

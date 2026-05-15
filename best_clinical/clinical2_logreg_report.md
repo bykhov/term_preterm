@@ -12,17 +12,17 @@ Pre-pregnancy diseases, Pregnancy diseases, Treatment to stop labor
 
 ## 5-Fold CV Results
 
-| Metric | Value |
-|--------|-------|
-| Accuracy | 0.750 |
-| Sensitivity | 0.621 |
-| Specificity | 0.824 |
-| F1 | 0.643 |
-| AUC | 0.762 |
-| TP | 18 |
-| TN | 42 |
-| FP | 9 |
-| FN | 11 |
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Accuracy | 0.750 | (0.655–0.845) |
+| Sensitivity | 0.621 | (0.351–0.889) |
+| Specificity | 0.824 | (0.770–0.878) |
+| F1 | 0.643 | (0.438–0.817) |
+| AUC | 0.762 | (0.645–0.871) |
+| TP | 18 | |
+| TN | 42 | |
+| FP | 9 | |
+| FN | 11 | |
 
 ## Notes
 - LogisticRegression provides calibrated posterior probabilities via `predict_proba`

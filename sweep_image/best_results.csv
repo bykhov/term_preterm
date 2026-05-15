@@ -1,0 +1,3 @@
+﻿model,classifier,fs_config,accuracy,sensitivity,specificity,f1,auc,TP,TN,FP,FN
+DenseNet121,SGD_modified_huber,ANOVA100_PCA5,0.6875,0.8276,0.6078,0.6575,0.7573,24,31,20,5
+ResNet50,LDA,ANOVA200_PCA5,0.7625,0.5862,0.8627,0.6415,0.6558,17,44,7,12

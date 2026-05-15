@@ -165,6 +165,8 @@ if __name__ == "__main__":
     decision_vals = results["decision_vals"]
     proba = results["proba"]
     metrics = results["metrics"]
+    ci = results["ci"]
+    fold_indices = results["fold_indices"]
 
     # --- Figures ---
     print("\nGenerating figures...")
@@ -203,6 +205,11 @@ if __name__ == "__main__":
         "specificity": metrics["specificity"],
         "F1_score": metrics["f1"],
         "TP": tp, "TN": tn, "FP": fp, "FN": fn,
+        "accuracy_ci_low": ci["accuracy"][1], "accuracy_ci_high": ci["accuracy"][2],
+        "sensitivity_ci_low": ci["sensitivity"][1], "sensitivity_ci_high": ci["sensitivity"][2],
+        "specificity_ci_low": ci["specificity"][1], "specificity_ci_high": ci["specificity"][2],
+        "F1_score_ci_low": ci["f1"][1], "F1_score_ci_high": ci["f1"][2],
+        "AUC_ci_low": ci["auc"][1], "AUC_ci_high": ci["auc"][2],
     }])
     table1.to_csv(BASE_DIR / f"{PREFIX}_classification.csv",
                    index=False, float_format="%.4f")
@@ -228,11 +235,15 @@ if __name__ == "__main__":
 
     # --- Proba CSV for fusion ---
     if proba is not None:
+        fold_assignments = np.full(len(y), -1, dtype=int)
+        for fold_num, (_, test_idx) in enumerate(fold_indices):
+            fold_assignments[test_idx] = fold_num
         proba_df = pd.DataFrame({
             "filename": filenames,
             "true_label": y,
             "proba_term": proba[:, 0],
             "proba_preterm": proba[:, 1],
+            "fold": fold_assignments,
         })
         proba_df.to_csv(BASE_DIR / f"{PREFIX}_proba.csv",
                          index=False, float_format="%.6f")
@@ -252,17 +263,17 @@ ResNet50 (2048-d) → Variance Filter → StandardScaler → ANOVA(k=200) → PC
 
 ## 5-Fold CV Results
 
-| Metric | Value |
-|--------|-------|
-| Accuracy | {metrics['accuracy']:.3f} |
-| Sensitivity | {metrics['sensitivity']:.3f} |
-| Specificity | {metrics['specificity']:.3f} |
-| F1 | {metrics['f1']:.3f} |
-| AUC | {auc_str} |
-| TP | {tp} |
-| TN | {tn} |
-| FP | {fp} |
-| FN | {fn} |
+| Metric | Value | 95% CI |
+|--------|-------|--------|
+| Accuracy | {metrics['accuracy']:.3f} | ({ci['accuracy'][1]:.3f}–{ci['accuracy'][2]:.3f}) |
+| Sensitivity | {metrics['sensitivity']:.3f} | ({ci['sensitivity'][1]:.3f}–{ci['sensitivity'][2]:.3f}) |
+| Specificity | {metrics['specificity']:.3f} | ({ci['specificity'][1]:.3f}–{ci['specificity'][2]:.3f}) |
+| F1 | {metrics['f1']:.3f} | ({ci['f1'][1]:.3f}–{ci['f1'][2]:.3f}) |
+| AUC | {auc_str} | ({ci['auc'][1]:.3f}–{ci['auc'][2]:.3f}) |
+| TP | {tp} | |
+| TN | {tn} | |
+| FP | {fp} | |
+| FN | {fn} | |
 
 ## Notes
 - LDA provides probabilistic outputs via posterior class probabilities

@@ -97,37 +97,37 @@ Comparison and combining analysis for 4 Image x Clinical pipeline combinations.
 
 | Pipeline | Accuracy | Sensitivity | Specificity | F1 | AUC |
 |----------|----------|-------------|-------------|-----|-----|
-| Image#2 (DenseNet121+SGD) | 0.688 | 0.828 | 0.608 | 0.658 | 0.718 |
+| Image#2 (DenseNet121+SGD) | 0.688 | 0.862 | 0.588 | 0.667 | 0.725 |
 | Clinical#1 (LDA) | 0.787 | 0.552 | 0.922 | 0.653 | 0.753 |
 
 ### Contingency Table
 
 |  | Clinical=Preterm | Clinical=Term |
 |--|-----------------|---------------|
-| Image=Preterm | 14 | 30 |
-| Image=Term | 6 | 30 |
+| Image=Preterm | 14 | 32 |
+| Image=Term | 6 | 28 |
 
 ### Comparison Statistics
 
 | Statistic | Value | Interpretation |
 |-----------|-------|----------------|
-| Disagreement | 0.4500 (36/80 samples) | |
-| McNemar b (img wrong, clin right) | 22 | |
-| McNemar c (img right, clin wrong) | 14 | |
-| McNemar chi2 | 1.3611 | Not significant (p=0.2433) |
-| Cohen's Kappa | 0.1429 | slight agreement |
-| Yule's Q | 0.4000 | moderate dependence |
+| Disagreement | 0.4750 (38/80 samples) | |
+| McNemar b (img wrong, clin right) | 23 | |
+| McNemar c (img right, clin wrong) | 15 | |
+| McNemar chi2 | 1.2895 | Not significant (p=0.2561) |
+| Cohen's Kappa | 0.1163 | slight agreement |
+| Yule's Q | 0.3425 | moderate dependence |
 
 ### Combining Results
 
 | Method | Accuracy | Sensitivity | Specificity | F1 | AUC |
 |--------|----------|-------------|-------------|-----|-----|
-| Image only | 0.688 | 0.828 | 0.608 | 0.658 | 0.718 |
+| Image only | 0.688 | 0.862 | 0.588 | 0.667 | 0.725 |
 | Clinical only | 0.787 | 0.552 | 0.922 | 0.653 | 0.753 |
-| LLR | 0.688 | 0.828 | 0.608 | 0.658 | 0.826 |
-| Product rule | 0.688 | 0.828 | 0.608 | 0.658 | 0.826 |
-| Majority vote | 0.688 | 0.828 | 0.608 | 0.658 | N/A |
-| Soft vote | 0.688 | 0.828 | 0.608 | 0.658 | 0.826 |
+| LLR | 0.688 | 0.862 | 0.588 | 0.667 | 0.838 |
+| Product rule | 0.688 | 0.862 | 0.588 | 0.667 | 0.838 |
+| Majority vote | 0.688 | 0.862 | 0.588 | 0.667 | N/A |
+| Soft vote | 0.688 | 0.862 | 0.588 | 0.667 | 0.838 |
 
 ---
 
@@ -137,34 +137,34 @@ Comparison and combining analysis for 4 Image x Clinical pipeline combinations.
 
 | Pipeline | Accuracy | Sensitivity | Specificity | F1 | AUC |
 |----------|----------|-------------|-------------|-----|-----|
-| Image#2 (DenseNet121+SGD) | 0.688 | 0.828 | 0.608 | 0.658 | 0.718 |
+| Image#2 (DenseNet121+SGD) | 0.688 | 0.862 | 0.588 | 0.667 | 0.725 |
 | Clinical#2 (LogReg) | 0.750 | 0.621 | 0.824 | 0.643 | 0.762 |
 
 ### Contingency Table
 
 |  | Clinical=Preterm | Clinical=Term |
 |--|-----------------|---------------|
-| Image=Preterm | 21 | 23 |
-| Image=Term | 6 | 30 |
+| Image=Preterm | 21 | 25 |
+| Image=Term | 6 | 28 |
 
 ### Comparison Statistics
 
 | Statistic | Value | Interpretation |
 |-----------|-------|----------------|
-| Disagreement | 0.3625 (29/80 samples) | |
-| McNemar b (img wrong, clin right) | 17 | |
-| McNemar c (img right, clin wrong) | 12 | |
-| McNemar chi2 | 0.5517 | Not significant (p=0.4576) |
-| Cohen's Kappa | 0.2978 | fair agreement |
-| Yule's Q | 0.6406 | moderate dependence |
+| Disagreement | 0.3875 (31/80 samples) | |
+| McNemar b (img wrong, clin right) | 18 | |
+| McNemar c (img right, clin wrong) | 13 | |
+| McNemar chi2 | 0.5161 | Not significant (p=0.4725) |
+| Cohen's Kappa | 0.2610 | fair agreement |
+| Yule's Q | 0.5935 | moderate dependence |
 
 ### Combining Results
 
 | Method | Accuracy | Sensitivity | Specificity | F1 | AUC |
 |--------|----------|-------------|-------------|-----|-----|
-| Image only | 0.688 | 0.828 | 0.608 | 0.658 | 0.718 |
+| Image only | 0.688 | 0.862 | 0.588 | 0.667 | 0.725 |
 | Clinical only | 0.750 | 0.621 | 0.824 | 0.643 | 0.762 |
-| LLR | 0.688 | 0.828 | 0.608 | 0.658 | 0.824 |
-| Product rule | 0.688 | 0.828 | 0.608 | 0.658 | 0.824 |
-| Majority vote | 0.688 | 0.828 | 0.608 | 0.658 | N/A |
-| Soft vote | 0.688 | 0.828 | 0.608 | 0.658 | 0.824 |
+| LLR | 0.688 | 0.862 | 0.588 | 0.667 | 0.835 |
+| Product rule | 0.688 | 0.862 | 0.588 | 0.667 | 0.835 |
+| Majority vote | 0.688 | 0.862 | 0.588 | 0.667 | N/A |
+| Soft vote | 0.688 | 0.862 | 0.588 | 0.667 | 0.835 |
