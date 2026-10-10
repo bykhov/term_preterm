@@ -9,3 +9,5 @@ Pillow
 pytorch-grad-cam
 opencv-python
 scipy
+scikit-image
+open_clip_torch

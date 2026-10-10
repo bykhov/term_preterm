@@ -1,0 +1,13 @@
+stream,reference,pooled_auc_diff_mean,seeds_positive,fold_auc_diff_mean,corrected_t,corrected_p
+ef_concat,fusion_img_ens,-0.0183,3,-0.0205,-0.4482,0.6550
+ef_concat,clinical_lda,0.0661,20,0.0562,0.7185,0.4741
+ef_ens,fusion_img_ens,-0.0008,10,0.0055,0.1887,0.8507
+ef_ens,clinical_lda,0.0835,20,0.0822,1.4839,0.1410
+ef_hc,fusion_img_ens,-0.0537,1,-0.0508,-1.2251,0.2235
+ef_hc,clinical_lda,0.0306,17,0.0260,0.4203,0.6752
+ef_mid,fusion_img_ens,-0.0371,0,-0.0368,-1.0453,0.2984
+ef_mid,clinical_lda,0.0472,20,0.0399,0.7154,0.4760
+ef_clip,fusion_img_ens,0.0105,16,0.0108,0.2572,0.7976
+ef_clip,clinical_lda,0.0949,20,0.0876,1.2298,0.2217
+ef_ref_densenet,fusion_img_ens,-0.0199,4,-0.0188,-0.4860,0.6281
+ef_ref_densenet,clinical_lda,0.0645,20,0.0580,0.9693,0.3347

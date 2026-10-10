@@ -1,12 +1,17 @@
-# Early Preterm Birth Prediction from Cervical Ultrasound Using Deep Texture Features
+# Prediction of Preterm Birth by Combining Deep Texture Features From Transvaginal Ultrasound and Clinical Data
 
-Supplementary code and data.
+Source code and anonymized dataset for the article of the same title.
 
 ## Overview
 
-Binary classification of cropped transvaginal ultrasound images for preterm birth prediction. The pipeline extracts deep texture features from RadImageNet-pretrained backbones (ResNet50, DenseNet121, InceptionV3), reduces dimensionality with PCA, and classifies using a configurable classifier (default: SVM).
+A pre-specified model, fixed before it was evaluated and involving no data-driven selection, predicts preterm birth from a cropped transvaginal ultrasound image of the cervix and 10 routine clinical variables:
 
-**Default pipeline:** ResNet50 avgpool (2048-d) &rarr; variance filter &rarr; StandardScaler &rarr; ANOVA(200) &rarr; PCA(5) &rarr; LDA &rarr; 5-Fold CV
+- **Image stream:** four frozen image representations (handcrafted texture, mid-level RadImageNet ResNet50 features, BiomedCLIP, RadImageNet DenseNet121 final-layer features), each followed by variance filter &rarr; StandardScaler &rarr; PCA(10) &rarr; logistic regression (L2, C = 0.1, balanced). The stream is the mean of the four probabilities.
+- **Clinical stream:** median imputation &rarr; StandardScaler &rarr; LDA.
+- **Late fusion (primary):** soft vote of the two streams.
+- **Early fusion (secondary):** for each representation, its 10 principal components concatenated with the clinical variables &rarr; StandardScaler &rarr; logistic regression; the mean of the four models.
+
+All models are evaluated with 20 repetitions (seeds 42-61) of stratified 5-fold cross-validation.
 
 ## Dataset
 
@@ -22,96 +27,51 @@ Binary classification of cropped transvaginal ultrasound images for preterm birt
    pip install -r requirements.txt
    ```
 
-2. Download RadImageNet weights (see `RadImageNet_pytorch/README.md`) and place them in the `RadImageNet_pytorch/` directory. Only the model(s) you plan to use need to be present:
-   - `ResNet50.pt` (default)
-   - `DenseNet121.pt`
-   - `InceptionV3.pt`
+2. Download the RadImageNet weights (see `RadImageNet_pytorch/README.md`) and place `ResNet50.pt` and `DenseNet121.pt` in the `RadImageNet_pytorch/` directory. The weights are needed only to re-extract features and for Grad-CAM: the extracted features are included (`RadImageNet_pytorch/features_*.pkl` and `results/features_new/*.pkl`), so the analyses run without them.
 
-   Prepopulated feature caches (`features_*.pkl`) are included so feature extraction can be skipped on first run.
+3. `features_new.py` downloads the BiomedCLIP weights from Hugging Face on first use.
 
 ## Usage
 
-### Image classification pipelines
+Run the scripts from the repository root, in this order:
 
 ```bash
-# Best accuracy: ResNet50 + ANOVA(200)->PCA(5) + LDA
-python best_image/pipeline1_lda.py
-
-# Alternative: DenseNet121 + ANOVA(100)->PCA(5) + SGD
-python best_image/pipeline2_sgd.py
+python features_new.py        # handcrafted, mid-level ResNet50 and BiomedCLIP features
+python features_eval.py       # image representations, image ensemble, clinical model, late fusion
+python ef_selection_free.py   # early fusion
+python statistical_tests.py   # cervical-length ablation, paired tests, complementarity, permutation test
+python robustness.py          # robustness analysis over 405 fusion models
+python gradcam.py             # Grad-CAM for the DenseNet121 member
+python table_clinical.py      # maternal clinical characteristics
 ```
 
-### Clinical classification pipelines
-
-```bash
-# Best accuracy: StandardScaler + LDA
-python best_clinical/clinical1_lda.py
-
-# Best AUC: StandardScaler + LogReg(C=0.1)
-python best_clinical/clinical2_logreg.py
-```
-
-### Classifier sweeps
-
-```bash
-# Image feature sweep: 28 classifiers x 3 models x 6 PCA dims
-python sweep_image/sweep_image.py
-
-# Clinical feature sweep
-python sweep_clinical/clinical_sweep.py
-```
-
-### Fusion
-
-```bash
-# Early fusion (image + clinical features)
-python early_fusion/early_fusion.py
-
-# Late fusion (combining classifier outputs)
-python late_fusion/contingency_analysis.py
-```
-
-### Explainability (Grad-CAM)
-
-```bash
-# Grad-CAM heatmaps for pipeline 1 (ResNet50 + LDA)
-python explainable/run_gradcam_pipeline1.py
-
-# Grad-CAM heatmaps for pipeline 2 (DenseNet121 + SGD)
-python explainable/run_gradcam_pipeline2.py
-```
+All outputs are written to `results/`.
 
 ## Repository Structure
 
 ```
 .
-├── pipeline.py                          # Computation engine (feature extraction, caching, CV, metrics)
+├── common.py                # Paths, data loading, fold-level models, fusion rule
+├── stats_utils.py           # DeLong, McNemar, Holm, corrected resampled t-test, agreement measures
+├── pipeline.py              # RadImageNet feature extraction and caching
+├── features_new.py          # Handcrafted, mid-level ResNet50 and BiomedCLIP features
+├── features_eval.py         # Image representations, image ensemble and late fusion
+├── ef_selection_free.py     # Early fusion
+├── statistical_tests.py     # Ablation, paired and permutation tests
+├── robustness.py            # Robustness analysis
+├── gradcam.py               # Grad-CAM
+├── table_clinical.py        # Clinical characteristics table
+├── explainable/
+│   └── xai_utils.py         # Differentiable model head and heatmap utilities
 ├── requirements.txt
 ├── Data/
-│   ├── term/                            # 51 term birth ultrasound images
-│   ├── pre-term/                        # 29 preterm birth ultrasound images
-│   └── clinical_data.csv                # Clinical features
+│   ├── term/                # 51 term birth ultrasound images
+│   ├── pre-term/            # 29 preterm birth ultrasound images
+│   └── clinical_data.csv    # Clinical features
 ├── RadImageNet_pytorch/
-│   ├── README.md                        # Download instructions for model weights
-│   └── features_*.pkl                   # Prepopulated feature caches
-├── best_image/
-│   ├── pipeline1_lda.py                 # Best accuracy image pipeline
-│   └── pipeline2_sgd.py                 # Alternative image pipeline
-├── best_clinical/
-│   ├── clinical1_lda.py                 # Best accuracy clinical pipeline
-│   └── clinical2_logreg.py              # Best AUC clinical pipeline
-├── sweep_image/
-│   └── sweep_image.py                   # Image classifier sweep
-├── sweep_clinical/
-│   └── clinical_sweep.py                # Clinical classifier sweep
-├── early_fusion/
-│   └── early_fusion.py                  # Early fusion pipeline
-├── late_fusion/
-│   └── contingency_analysis.py          # Late fusion analysis
-└── explainable/
-    ├── xai_utils.py                     # Shared explainability utilities
-    ├── run_gradcam_pipeline1.py          # Grad-CAM for pipeline 1
-    └── run_gradcam_pipeline2.py          # Grad-CAM for pipeline 2
+│   ├── README.md            # Download instructions for model weights
+│   └── features_*.pkl       # Extracted ResNet50 and DenseNet121 features
+└── results/                 # Outputs: tables (CSV), figures, extracted features, Grad-CAM maps
 ```
 
 ## License

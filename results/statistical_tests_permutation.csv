@@ -1,0 +1,4 @@
+stream,auc,auc_null_mean,auc_null_95,auc_p
+late_fusion,0.8269,0.4708,0.6072,0.0010
+ef_ens,0.8147,0.4857,0.6295,0.0010
+img_ens,0.7241,0.4847,0.6261,0.0040

@@ -1,0 +1,11 @@
+variable,test,n_term,n_preterm,term_mean,term_sd,preterm_mean,preterm_sd,p,term_yes,preterm_yes,term_pct,preterm_pct
+Age,t,51,29,34.9608,4.8537,30.9310,5.1265,0.0008,,,,
+Pregnancy number,u,51,29,3.3137,1.5426,2.3448,1.3958,0.0048,,,,
+Past births,u,51,29,1.7059,1.1882,1.1379,1.1870,0.0394,,,,
+Previous preterm births,fisher,51,29,,,,,0.0653,3.0000,6.0000,5.8824,20.6897
+Previous cesarean section,fisher,51,28,,,,,0.5232,9.0000,3.0000,17.6471,10.7143
+Cervical length (cm),t,51,29,4.1010,0.6229,3.7179,0.8820,0.0262,,,,
+Smoker,fisher,51,29,,,,,0.6624,3.0000,3.0000,5.8824,10.3448
+Pre-pregnancy diseases,fisher,51,29,,,,,1.0000,2.0000,1.0000,3.9216,3.4483
+Pregnancy diseases,fisher,51,29,,,,,0.0926,8.0000,10.0000,15.6863,34.4828
+Treatment to stop labor,fisher,51,29,,,,,0.0049,0.0000,5.0000,0.0000,17.2414

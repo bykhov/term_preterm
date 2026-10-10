@@ -1,0 +1,13 @@
+stream,reference,primary,pooled_auc_diff_mean,seeds_positive,fold_auc_diff_mean,corrected_t,corrected_p
+hc,ref_densenet,False,-0.0559,2,-0.0495,-0.6410,0.5230
+mid,ref_densenet,False,-0.0182,5,-0.0119,-0.1786,0.8586
+clip,ref_densenet,False,0.0423,18,0.0514,0.5834,0.5609
+ref_resnet,ref_densenet,False,-0.0825,1,-0.0753,-1.0623,0.2907
+img_ens,ref_densenet,True,0.0543,19,0.0612,1.0805,0.2825
+fusion_hc,clinical_lda,False,0.0353,18,0.0293,0.5915,0.5555
+fusion_mid,clinical_lda,False,0.0399,19,0.0355,0.6848,0.4951
+fusion_clip,clinical_lda,False,0.0780,20,0.0670,1.0978,0.2749
+fusion_ref_densenet,clinical_lda,False,0.0766,20,0.0651,1.2306,0.2214
+fusion_ref_resnet,clinical_lda,False,0.0146,15,0.0036,0.0799,0.9365
+fusion_img_ens,clinical_lda,True,0.0843,20,0.0768,1.6451,0.1031
+fusion_img_ens,fusion_ref_densenet,True,0.0077,12,0.0117,0.4215,0.6743

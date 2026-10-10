@@ -1,0 +1,14 @@
+model,reference,primary,auc_diff_mean,auc_seeds_positive,acc_diff_mean,corrected_t,corrected_p,delong_p_median,delong_seeds_p05,mcnemar_p_median,mcnemar_seeds_p05,corrected_p_holm
+late_fusion,clinical_lda,True,0.0843,20,0.0175,1.6451,0.1031,0.0360,11,0.7070,0,0.1031
+ef_ens,clinical_lda,False,0.0835,20,0.0137,1.4839,0.1410,0.0816,7,0.7905,0,0.8461
+late_fusion,ef_ens,False,0.0008,10,0.0038,-0.1887,0.8507,0.6951,0,0.8953,0,1.0000
+img_ens,clinical_lda,False,0.0068,10,-0.0475,0.0051,0.9960,0.7673,0,0.4502,0,1.0000
+img_ens,cl_only,False,0.1492,20,0.0250,1.7042,0.0915,0.0415,13,0.7780,0,0.7318
+late_fusion,cl_only,False,0.2267,20,0.0900,3.0255,0.0032,0.0005,20,0.1671,7,0.0380
+ef_ens,cl_only,False,0.2259,20,0.0863,2.9567,0.0039,0.0013,20,0.2649,1,0.0389
+img_ens,cl_only_lr,False,0.1455,20,0.1294,1.7042,0.0915,0.0508,10,0.0837,3,0.7318
+late_fusion,cl_only_lr,False,0.2230,20,0.1944,3.0255,0.0032,0.0007,20,0.0061,19,0.0380
+ef_ens,cl_only_lr,False,0.2222,20,0.1906,2.9567,0.0039,0.0014,20,0.0081,19,0.0389
+clinical_lda,clinical_no_cl,False,0.0105,14,0.0094,0.4079,0.6842,0.6490,0,0.7266,0,1.0000
+late_fusion,late_fusion_no_cl,False,-0.0074,5,0.0119,-0.2840,0.7770,0.7715,0,0.6875,0,1.0000
+ef_ens,ef_ens_no_cl,False,-0.0013,7,0.0138,0.0482,0.9616,0.7955,0,0.6875,0,1.0000
